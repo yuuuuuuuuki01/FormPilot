@@ -1,8 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import { getDashboardData, getReviewLabel } from "@/lib/domain";
 
-export default function ReviewsPage() {
-  const data = getDashboardData();
+export const dynamic = "force-dynamic";
+
+export default async function ReviewsPage() {
+  const data = await getDashboardData();
 
   return (
     <AppShell

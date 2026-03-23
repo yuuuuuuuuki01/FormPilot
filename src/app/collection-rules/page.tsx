@@ -1,8 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import { getDashboardData } from "@/lib/domain";
 
-export default function CollectionRulesPage() {
-  const data = getDashboardData();
+export const dynamic = "force-dynamic";
+
+export default async function CollectionRulesPage() {
+  const data = await getDashboardData();
 
   return (
     <AppShell

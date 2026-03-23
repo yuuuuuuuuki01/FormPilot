@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { getDashboardData } from "@/lib/domain";
 
-export function GET() {
-  return NextResponse.json({ reviews: getDashboardData().reviews });
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  const data = await getDashboardData();
+  return NextResponse.json({ reviews: data.reviews });
 }

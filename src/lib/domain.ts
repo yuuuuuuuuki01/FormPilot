@@ -1,4 +1,4 @@
-import { getDemoState } from "@/lib/demo-data";
+import { readState } from "@/lib/store";
 import type { Company, DashboardData, DashboardMetric, ReplyClassification, ReviewQueueItem } from "@/lib/types";
 
 function ratio(part: number, whole: number) {
@@ -9,11 +9,11 @@ function ratio(part: number, whole: number) {
 }
 
 function companyNameById(companyId: string) {
-  return getDemoState().companies.find((company) => company.id === companyId)?.name ?? companyId;
+  return readState().then((state) => state.companies.find((company) => company.id === companyId)?.name ?? companyId);
 }
 
-export function getDashboardData(): DashboardData {
-  const state = getDemoState();
+export async function getDashboardData(): Promise<DashboardData> {
+  const state = await readState();
   const collected = state.analytics.filter((item) => item.type === "collected").length;
   const scanned = state.analytics.filter((item) => item.type === "scanned").length;
   const sent = state.analytics.filter((item) => item.type === "sent").length;
@@ -72,8 +72,8 @@ export function getReviewLabel(item: ReviewQueueItem) {
   }
 }
 
-export function getPipelineSummary() {
-  const state = getDemoState();
+export async function getPipelineSummary() {
+  const state = await readState();
   return [
     { label: "送信待ち", count: state.jobs.filter((job) => job.status === "queued").length },
     { label: "レビュー待ち", count: state.jobs.filter((job) => job.status === "review").length + state.reviews.length },
@@ -91,13 +91,17 @@ export function getBlockedPhrasesPreview() {
   ];
 }
 
-export function getUpcomingMeetings() {
-  return getDemoState().meetings.map((meeting) => ({
+export async function getUpcomingMeetings() {
+  const state = await readState();
+  return Promise.all(
+    state.meetings.map(async (meeting) => ({
     ...meeting,
-    companyName: companyNameById(meeting.companyId)
-  }));
+    companyName: await companyNameById(meeting.companyId)
+    }))
+  );
 }
 
-export function getCompaniesNeedingAction() {
-  return getDemoState().companies.filter((company) => !company.sendReady || company.scanStatus !== "scanned");
+export async function getCompaniesNeedingAction() {
+  const state = await readState();
+  return state.companies.filter((company) => !company.sendReady || company.scanStatus !== "scanned");
 }

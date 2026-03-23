@@ -11,9 +11,10 @@ FormPilot is an MVP for outbound-sales automation focused on:
 ## Included in this scaffold
 
 - Next.js App Router UI for collection, replies, reviews, and settings
-- typed demo domain models for the MVP entities
+- typed MVP domain models for the MVP entities
+- file-backed application state in `data/formpilot-state.json`
 - server-side selectors and policy logic
-- minimal JSON APIs for dashboard, collection rules, and review queue data
+- JSON APIs for dashboard, collection rules, review queue, and send policy updates
 
 ## Not yet wired to live providers
 
@@ -25,6 +26,14 @@ This scaffold models the integration points for:
 - persistent multi-tenant storage
 
 Those integrations are represented as typed workflow states and service boundaries so the next iteration can replace demo data with real providers.
+
+## Current mutable APIs
+
+- `GET/POST /api/collection-rules`
+- `GET /api/dashboard`
+- `GET /api/reviews`
+- `PATCH /api/reviews/:id`
+- `GET/PATCH /api/settings`
 
 ## Run
 

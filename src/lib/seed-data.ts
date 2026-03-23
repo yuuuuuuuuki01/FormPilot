@@ -13,7 +13,6 @@ import type {
   ReplyEvent,
   ReviewQueueItem,
   Tenant,
-  TenantSendPolicy,
   User,
   WebsiteScan
 } from "@/lib/types";
@@ -29,7 +28,7 @@ const users: User[] = [
   { id: "user_2", tenantId: tenant.id, name: "Mio Sato", role: "member" }
 ];
 
-const policy: TenantSendPolicy = {
+const policy: DashboardData["policy"] = {
   tenantId: tenant.id,
   timezone: "Asia/Tokyo",
   allowedWeekdays: [1, 2, 3, 4, 5],
@@ -333,30 +332,30 @@ const analytics: AnalyticsEvent[] = [
   { id: "analytics_8", tenantId: tenant.id, type: "meeting_booked", companyId: "company_1", occurredAt: "2026-03-22T14:05:00+09:00" }
 ];
 
-export function getDemoState(): DashboardData & {
+export interface AppState extends DashboardData {
   users: User[];
   aliases: CompanyAlias[];
   snapshots: PageSnapshot[];
   templates: MessageTemplate[];
   analytics: AnalyticsEvent[];
-} {
-  return {
-    tenant,
-    metrics: [],
-    policy,
-    rules,
-    companies,
-    scans,
-    forms,
-    jobs,
-    replies,
-    reviews,
-    meetings,
-    opportunities,
-    users,
-    aliases,
-    snapshots,
-    templates,
-    analytics
-  };
 }
+
+export const seedState: AppState = {
+  tenant,
+  metrics: [],
+  policy,
+  rules,
+  companies,
+  scans,
+  forms,
+  jobs,
+  replies,
+  reviews,
+  meetings,
+  opportunities,
+  users,
+  aliases,
+  snapshots,
+  templates,
+  analytics
+};

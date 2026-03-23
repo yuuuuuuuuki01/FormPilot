@@ -1,8 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import { getDashboardData, getReplyTone } from "@/lib/domain";
 
-export default function RepliesPage() {
-  const data = getDashboardData();
+export const dynamic = "force-dynamic";
+
+export default async function RepliesPage() {
+  const data = await getDashboardData();
 
   return (
     <AppShell

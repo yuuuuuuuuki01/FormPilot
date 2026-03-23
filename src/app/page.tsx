@@ -8,11 +8,13 @@ import {
   getUpcomingMeetings
 } from "@/lib/domain";
 
-export default function HomePage() {
-  const data = getDashboardData();
-  const pipeline = getPipelineSummary();
-  const upcoming = getUpcomingMeetings();
-  const blockers = getCompaniesNeedingAction();
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const data = await getDashboardData();
+  const pipeline = await getPipelineSummary();
+  const upcoming = await getUpcomingMeetings();
+  const blockers = await getCompaniesNeedingAction();
 
   return (
     <AppShell

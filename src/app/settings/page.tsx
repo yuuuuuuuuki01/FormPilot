@@ -1,8 +1,10 @@
 import { AppShell } from "@/components/app-shell";
 import { getBlockedPhrasesPreview, getDashboardData } from "@/lib/domain";
 
-export default function SettingsPage() {
-  const data = getDashboardData();
+export const dynamic = "force-dynamic";
+
+export default async function SettingsPage() {
+  const data = await getDashboardData();
 
   return (
     <AppShell
