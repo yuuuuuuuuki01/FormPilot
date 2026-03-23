@@ -41,3 +41,13 @@ Those integrations are represented as typed workflow states and service boundari
 npm install
 npm run dev
 ```
+
+## GitHub Pages
+
+Static demo files live in `docs/` and are deployed by `.github/workflows/deploy-pages.yml`.
+
+This Pages build is a browser-only demo:
+
+- no server API execution
+- no file-backed persistence
+- edits are stored in browser `localStorage`

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FormPilot Pages Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-badge">FP</div>
+          <div>
+            <p class="eyebrow">GitHub Pages Demo</p>
+            <h1>FormPilot</h1>
+          </div>
+        </div>
+        <nav class="nav">
+          <a href="#overview">概要</a>
+          <a href="#rules">収集ルール</a>
+          <a href="#reviews">レビュー</a>
+          <a href="#settings">設定</a>
+        </nav>
+      </aside>
+
+      <main class="main">
+        <section id="overview" class="hero">
+          <p class="eyebrow">Static Demo</p>
+          <h2>GitHub Pages で開ける FormPilot デモ</h2>
+          <p>
+            このページは GitHub Pages 用の静的デモです。API やファイル保存の代わりに、ブラウザ内の
+            `localStorage` に保存します。
+          </p>
+          <div id="metrics" class="metrics"></div>
+        </section>
+
+        <section id="rules" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Collection Rules</p>
+              <h3>収集ルール</h3>
+            </div>
+          </div>
+          <form id="rule-form" class="form-card">
+            <div class="field-grid">
+              <label class="field">
+                <span>ルール名</span>
+                <input name="name" required placeholder="例: 大阪の建設業向け" />
+              </label>
+              <label class="field">
+                <span>実行頻度</span>
+                <input name="runCadence" value="平日 09:30" />
+              </label>
+            </div>
+            <div class="field-grid">
+              <label class="field">
+                <span>業種</span>
+                <input name="industries" placeholder="士業, 製造" />
+              </label>
+              <label class="field">
+                <span>地域</span>
+                <input name="regions" placeholder="東京, 神奈川" />
+              </label>
+            </div>
+            <div class="field-grid">
+              <label class="field">
+                <span>キーワード</span>
+                <input name="keywords" placeholder="DX, 問い合わせ" />
+              </label>
+              <label class="field">
+                <span>除外語</span>
+                <input name="excludeTerms" placeholder="採用, 個人向け" />
+              </label>
+            </div>
+            <div class="checkbox-row">
+              <label class="checkbox"><input type="checkbox" name="source" value="search" checked />検索</label>
+              <label class="checkbox"><input type="checkbox" name="source" value="directory" checked />ディレクトリ</label>
+            </div>
+            <div class="actions">
+              <button class="button" type="submit">追加</button>
+              <span id="rule-feedback" class="feedback"></span>
+            </div>
+          </form>
+          <div id="rules-list" class="cards"></div>
+        </section>
+
+        <section id="reviews" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Review Queue</p>
+              <h3>レビューキュー</h3>
+            </div>
+          </div>
+          <div id="reviews-list" class="cards"></div>
+        </section>
+
+        <section id="settings" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Send Policy</p>
+              <h3>送信ポリシー</h3>
+            </div>
+          </div>
+          <form id="settings-form" class="form-card">
+            <div class="field-grid">
+              <label class="field">
+                <span>タイムゾーン</span>
+                <input name="timezone" />
+              </label>
+              <label class="field">
+                <span>最小送信間隔</span>
+                <input name="minHoursBetweenSends" type="number" min="1" />
+              </label>
+            </div>
+            <div class="field-grid">
+              <label class="field">
+                <span>営業開始時刻</span>
+                <input name="startHour" type="number" min="0" max="23" />
+              </label>
+              <label class="field">
+                <span>営業終了時刻</span>
+                <input name="endHour" type="number" min="0" max="23" />
+              </label>
+            </div>
+            <div id="weekday-list" class="checkbox-row"></div>
+            <label class="checkbox"><input name="blockJapaneseHolidays" type="checkbox" />日本の祝日は送信停止にする</label>
+            <div class="actions">
+              <button class="button" type="submit">保存</button>
+              <span id="settings-feedback" class="feedback"></span>
+            </div>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+  </html>
