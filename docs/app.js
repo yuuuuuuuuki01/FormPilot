@@ -8,6 +8,38 @@ const defaultState = {
     { label: "返信率", value: "100%", detail: "1 件の返信を分類済み" },
     { label: "日程確定率", value: "100%", detail: "1 件が予約リンク経由で確定" }
   ],
+  companies: [
+    {
+      id: "company_1",
+      name: "Sakura Legal Partners",
+      websiteUrl: "https://sakura-legal.example.jp",
+      source: "search",
+      scanStatus: "scanned",
+      formDetected: true,
+      sendReady: true,
+      blockReason: ""
+    },
+    {
+      id: "company_2",
+      name: "Takumi Precision",
+      websiteUrl: "https://takumi-precision.example.jp",
+      source: "directory",
+      scanStatus: "needs_review",
+      formDetected: true,
+      sendReady: false,
+      blockReason: "営業禁止文言をフォーム周辺で検知"
+    },
+    {
+      id: "company_3",
+      name: "Northfield Consulting",
+      websiteUrl: "https://northfield-consulting.example.jp",
+      source: "search",
+      scanStatus: "queued",
+      formDetected: false,
+      sendReady: false,
+      blockReason: "フォーム候補を再探索中"
+    }
+  ],
   rules: [
     {
       id: "rule_1",
@@ -24,6 +56,7 @@ const defaultState = {
   reviews: [
     {
       id: "review_1",
+      companyId: "company_2",
       subject: "Takumi Precision の問い合わせフォーム",
       reason: "ambiguous_phrase",
       detail: "フォーム周辺文言に営業拒否文言が含まれているため、送信を停止しました。",
@@ -32,6 +65,7 @@ const defaultState = {
     },
     {
       id: "review_2",
+      companyId: "company_3",
       subject: "Northfield Consulting のフォーム探索",
       reason: "special_form",
       detail: "問い合わせ導線が SPA 内に隠れており、自動抽出の再設計が必要です。",
@@ -72,7 +106,48 @@ function reviewLabel(reason) {
   }[reason] ?? reason;
 }
 
+function sourceLabel(source) {
+  return source === "search" ? "検索" : "ディレクトリ";
+}
+
+function getReadiness(company) {
+  if (!company.formDetected) {
+    return { label: "フォーム未発見", tone: "warn" };
+  }
+  if (company.sendReady) {
+    return { label: "送信可能", tone: "ok" };
+  }
+  return { label: company.blockReason || "要レビュー", tone: "risk" };
+}
+
+function getScanTone(scanStatus) {
+  if (scanStatus === "scanned") {
+    return "ok";
+  }
+  if (scanStatus === "queued") {
+    return "warn";
+  }
+  return "risk";
+}
+
+function recalculateMetrics(state) {
+  const scannedCount = state.companies.filter((company) => company.scanStatus === "scanned").length;
+  const sendReadyCount = state.companies.filter((company) => company.sendReady).length;
+  const successRate = state.companies.length
+    ? `${Math.round((scannedCount / state.companies.length) * 100)}%`
+    : "0%";
+
+  state.metrics = [
+    { label: "取得数", value: String(state.companies.length), detail: `${state.rules.length} ルールから企業を取得` },
+    { label: "解析成功率", value: successRate, detail: `${scannedCount} / ${state.companies.length} 企業でURL解析完了` },
+    { label: "送信数", value: String(sendReadyCount), detail: `${state.reviews.length} 件がレビュー待ち` },
+    { label: "返信率", value: "100%", detail: "1 件の返信を分類済み" },
+    { label: "日程確定率", value: "100%", detail: "1 件が予約リンク経由で確定" }
+  ];
+}
+
 function renderMetrics(state) {
+  recalculateMetrics(state);
   document.getElementById("metrics").innerHTML = state.metrics
     .map(
       (metric) => `
@@ -83,6 +158,116 @@ function renderMetrics(state) {
       </article>`
     )
     .join("");
+}
+
+function renderCompanies(state) {
+  document.getElementById("companies-body").innerHTML = state.companies
+    .map((company, index) => {
+      const readiness = getReadiness(company);
+      return `
+        <tr>
+          <td>
+            <strong>${company.name}</strong>
+            <div class="muted">${company.websiteUrl}</div>
+            <div id="company-feedback-${index}" class="feedback-slot"></div>
+          </td>
+          <td>${sourceLabel(company.source)}</td>
+          <td><span class="pill ${getScanTone(company.scanStatus)}">${company.scanStatus}</span></td>
+          <td><span class="pill ${readiness.tone}">${readiness.label}</span></td>
+          <td>
+            <button class="button small-button" data-company-scan="${index}" type="button">フォーム探索</button>
+          </td>
+        </tr>`;
+    })
+    .join("");
+
+  state.companies.forEach((_, index) => {
+    document.querySelector(`[data-company-scan="${index}"]`).addEventListener("click", () => {
+      runCompanyScan(state, index);
+    });
+  });
+}
+
+function upsertReview(state, review) {
+  const index = state.reviews.findIndex((item) => item.companyId === review.companyId);
+  if (index >= 0) {
+    state.reviews[index] = review;
+    return;
+  }
+  state.reviews.unshift(review);
+}
+
+function removeReview(state, companyId) {
+  state.reviews = state.reviews.filter((review) => review.companyId !== companyId);
+}
+
+function runCompanyScan(state, index) {
+  const company = state.companies[index];
+  const feedback = document.getElementById(`company-feedback-${index}`);
+  feedback.textContent = "フォーム探索を実行しています...";
+  feedback.className = "feedback-slot feedback warn";
+
+  window.setTimeout(() => {
+    if (company.name.includes("Takumi")) {
+      state.companies[index] = {
+        ...company,
+        scanStatus: "needs_review",
+        formDetected: true,
+        sendReady: false,
+        blockReason: "営業禁止文言を検知"
+      };
+      upsertReview(state, {
+        id: `review_${Date.now()}`,
+        companyId: company.id,
+        subject: `${company.name} の問い合わせフォーム`,
+        reason: "ambiguous_phrase",
+        detail: "フォーム周辺文言に営業目的の送信禁止表現を検知したため、レビューに回しました。",
+        assignee: "",
+        retryAllowed: false
+      });
+      feedback.textContent = "フォーム探索完了: 禁止文言を検知したためレビューへ移動しました";
+      feedback.className = "feedback-slot feedback risk";
+    } else if (company.name.includes("Northfield")) {
+      state.companies[index] = {
+        ...company,
+        scanStatus: "needs_review",
+        formDetected: false,
+        sendReady: false,
+        blockReason: "問い合わせ導線が SPA 内にあり追加解析が必要"
+      };
+      upsertReview(state, {
+        id: `review_${Date.now()}`,
+        companyId: company.id,
+        subject: `${company.name} のフォーム探索`,
+        reason: "special_form",
+        detail: "問い合わせ導線が動的描画で隠れているため、追加解析が必要です。",
+        assignee: "",
+        retryAllowed: true
+      });
+      feedback.textContent = "フォーム探索完了: 特殊フォーム候補としてレビューへ移動しました";
+      feedback.className = "feedback-slot feedback warn";
+    } else {
+      state.companies[index] = {
+        ...company,
+        scanStatus: "scanned",
+        formDetected: true,
+        sendReady: true,
+        blockReason: ""
+      };
+      removeReview(state, company.id);
+      feedback.textContent = "フォーム探索完了: 送信可能です";
+      feedback.className = "feedback-slot feedback ok";
+    }
+
+    saveState(state);
+    renderMetrics(state);
+    renderCompanies(state);
+    renderReviews(state);
+
+    const refreshedFeedback = document.getElementById(`company-feedback-${index}`);
+    refreshedFeedback.textContent = feedback.textContent;
+    refreshedFeedback.className = feedback.className;
+  }, 350);
 }
 
 function renderRules(state) {
@@ -183,6 +368,7 @@ function bindRuleForm(state) {
     });
 
     saveState(state);
+    renderMetrics(state);
     form.reset();
     form.runCadence.value = "平日 09:30";
     form.querySelectorAll('input[name="source"]').forEach((node) => {
@@ -217,6 +403,7 @@ function bindSettingsForm(state) {
 
 const state = loadState();
 renderMetrics(state);
+renderCompanies(state);
 renderRules(state);
 renderReviews(state);
 renderSettings(state);
