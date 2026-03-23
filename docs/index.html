@@ -18,6 +18,7 @@
         </div>
         <nav class="nav">
           <a href="#overview">概要</a>
+          <a href="#companies">企業収集</a>
           <a href="#rules">収集ルール</a>
           <a href="#reviews">レビュー</a>
           <a href="#settings">設定</a>
@@ -30,9 +31,33 @@
           <h2>GitHub Pages で開ける FormPilot デモ</h2>
           <p>
             このページは GitHub Pages 用の静的デモです。API やファイル保存の代わりに、ブラウザ内の
-            `localStorage` に保存します。
+            <code>localStorage</code> に保存します。収集済み企業からそのままフォーム探索を試せます。
           </p>
           <div id="metrics" class="metrics"></div>
+        </section>
+
+        <section id="companies" class="panel">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Company Scan</p>
+              <h3>収集中の企業</h3>
+            </div>
+            <p class="muted panel-copy">企業URLからフォーム探索を再実行し、送信可能・要レビューを見分けます。</p>
+          </div>
+          <div class="table-card">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>企業</th>
+                  <th>取得元</th>
+                  <th>解析状態</th>
+                  <th>送信可否</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody id="companies-body"></tbody>
+            </table>
+          </div>
         </section>
 
         <section id="rules" class="panel">
@@ -136,4 +161,4 @@
 
     <script src="./app.js" type="module"></script>
   </body>
-  </html>
+</html>

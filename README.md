@@ -14,7 +14,8 @@ FormPilot is an MVP for outbound-sales automation focused on:
 - typed MVP domain models for the MVP entities
 - file-backed application state in `data/formpilot-state.json`
 - server-side selectors and policy logic
-- JSON APIs for dashboard, collection rules, review queue, and send policy updates
+- company collection -> website scan -> form discovery flow with review queue branching
+- JSON APIs for dashboard, collection rules, company scan, review queue, and send policy updates
 
 ## Not yet wired to live providers
 
@@ -31,6 +32,7 @@ Those integrations are represented as typed workflow states and service boundari
 
 - `GET/POST /api/collection-rules`
 - `GET /api/dashboard`
+- `POST /api/companies/:id/scan`
 - `GET /api/reviews`
 - `PATCH /api/reviews/:id`
 - `GET/PATCH /api/settings`
@@ -51,3 +53,4 @@ This Pages build is a browser-only demo:
 - no server API execution
 - no file-backed persistence
 - edits are stored in browser `localStorage`
+- collected companies can be rescanned in-browser to simulate form discovery outcomes
