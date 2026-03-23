@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { buildSearchQueries, materializeCollectedCompanies } from "@/lib/collector";
 import { seedState, type AppState } from "@/lib/seed-data";
 import type { CollectionSource, LeadCollectionRule, ReviewQueueItem, TenantSendPolicy } from "@/lib/types";
 
@@ -72,6 +73,56 @@ export async function createCollectionRule(input: CreateRuleInput) {
   return state.rules[0];
 }
 
+export async function runCollectionRule(ruleId: string) {
+  let result:
+    | {
+        rule: LeadCollectionRule;
+        collectedCount: number;
+        queries: string[];
+      }
+    | undefined;
+
+  await updateState((current) => {
+    const rule = current.rules.find((item) => item.id === ruleId);
+    if (!rule) {
+      return current;
+    }
+
+    const queries = buildSearchQueries(rule);
+    const companies = materializeCollectedCompanies(current.tenant.id, rule, current.companies);
+    const now = new Date().toISOString();
+
+    const updatedRule: LeadCollectionRule = {
+      ...rule,
+      lastRunAt: now
+    };
+
+    result = {
+      rule: updatedRule,
+      collectedCount: companies.length,
+      queries
+    };
+
+    return {
+      ...current,
+      rules: current.rules.map((item) => (item.id === ruleId ? updatedRule : item)),
+      companies: [...companies, ...current.companies],
+      analytics: [
+        ...companies.map((company, index) => ({
+          id: `analytics_${Date.now()}_${index}`,
+          tenantId: current.tenant.id,
+          type: "collected" as const,
+          companyId: company.id,
+          occurredAt: now
+        })),
+        ...current.analytics
+      ]
+    };
+  });
+
+  return result;
+}
+
 export interface UpdateReviewInput {
   assignee?: string;
   detail?: string;
@@ -132,4 +183,3 @@ export async function updateSendPolicy(input: UpdatePolicyInput) {
 
   return updated;
 }
-
