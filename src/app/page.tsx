@@ -1,10 +1,10 @@
 import { AppShell } from "@/components/app-shell";
+import { CompanyCollectionTable } from "@/components/company-collection-table";
 import {
   getBlockedPhrasesPreview,
   getCompaniesNeedingAction,
   getDashboardData,
   getPipelineSummary,
-  getSendReadiness,
   getUpcomingMeetings
 } from "@/lib/domain";
 
@@ -19,13 +19,13 @@ export default async function HomePage() {
   return (
     <AppShell
       title="企業 / フォーム収集画面"
-      description="収集、URL解析、フォーム抽出、送信可否の判定を一画面で把握するための MVP 主画面です。営業担当はここで送信可能企業と要レビュー企業を見分けます。"
+      description="収集、URL解析、フォーム抽出、送信可否の判定を一画面で把握するための MVP 主画面です。収集済み企業からそのままフォーム探索を実行できます。"
     >
       <section className="hero">
         <p className="eyebrow">MVP Focus</p>
         <h3>企業URLからフォーム情報までを自動取得し、送れる企業だけを前に出す</h3>
         <p>
-          検索起点・ディレクトリ起点の両方で企業を集め、問い合わせ導線を解析し、営業禁止文言・時間帯・フォーム構造をチェックして送信可否を即時判定します。
+          収集ルールで企業URL候補を取り込み、そのままフォーム探索へ流して送信可否を更新します。危険ケースだけレビューへ戻す形です。
         </p>
         <div className="hero-grid">
           {pipeline.map((item) => (
@@ -48,45 +48,7 @@ export default async function HomePage() {
       </section>
 
       <section className="split">
-        <article className="card">
-          <h3 className="table-title">収集中の企業</h3>
-          <table className="table">
-            <thead>
-              <tr>
-                <th>企業</th>
-                <th>取得元</th>
-                <th>解析状態</th>
-                <th>送信可否</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.companies.map((company) => {
-                const readiness = getSendReadiness(company);
-                const scanTone =
-                  company.scanStatus === "scanned"
-                    ? "ok"
-                    : company.scanStatus === "queued"
-                      ? "warn"
-                      : "risk";
-                return (
-                  <tr key={company.id}>
-                    <td>
-                      <strong>{company.name}</strong>
-                      <div className="muted">{company.websiteUrl}</div>
-                    </td>
-                    <td>{company.source === "search" ? "検索" : "ディレクトリ"}</td>
-                    <td>
-                      <span className={`pill ${scanTone}`}>{company.scanStatus}</span>
-                    </td>
-                    <td>
-                      <span className={`pill ${readiness.tone}`}>{readiness.label}</span>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </article>
+        <CompanyCollectionTable companies={data.companies} />
 
         <article className="card">
           <h3 className="table-title">直近の商談化</h3>

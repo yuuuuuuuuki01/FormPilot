@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { buildSearchQueries, materializeCollectedCompanies } from "@/lib/collector";
+import { simulateScan } from "@/lib/scanner";
 import { seedState, type AppState } from "@/lib/seed-data";
 import type { CollectionSource, LeadCollectionRule, ReviewQueueItem, TenantSendPolicy } from "@/lib/types";
 
@@ -113,6 +114,57 @@ export async function runCollectionRule(ruleId: string) {
           tenantId: current.tenant.id,
           type: "collected" as const,
           companyId: company.id,
+          occurredAt: now
+        })),
+        ...current.analytics
+      ]
+    };
+  });
+
+  return result;
+}
+
+export async function scanCompany(companyId: string) {
+  let result:
+    | {
+        companyId: string;
+        sendReady: boolean;
+        scanStatus: string;
+      }
+    | undefined;
+
+  await updateState((current) => {
+    const existing = current.companies.find((company) => company.id === companyId);
+    if (!existing) {
+      return current;
+    }
+
+    const scanned = simulateScan(existing);
+    const now = new Date().toISOString();
+
+    result = {
+      companyId,
+      sendReady: scanned.company.sendReady,
+      scanStatus: scanned.company.scanStatus
+    };
+
+    return {
+      ...current,
+      companies: current.companies.map((company) => (company.id === companyId ? scanned.company : company)),
+      scans: [scanned.scan, ...current.scans.filter((scan) => scan.companyId !== companyId)],
+      forms: scanned.form ? [scanned.form, ...current.forms.filter((form) => form.companyId !== companyId)] : current.forms,
+      snapshots: scanned.snapshot
+        ? [scanned.snapshot, ...current.snapshots.filter((snapshot) => snapshot.companyId !== companyId)]
+        : current.snapshots,
+      reviews: scanned.review
+        ? [scanned.review, ...current.reviews.filter((review) => review.companyId !== companyId)]
+        : current.reviews.filter((review) => review.companyId !== companyId),
+      analytics: [
+        ...scanned.analyticsTypes.map((type, index) => ({
+          id: `analytics_${Date.now()}_${index}`,
+          tenantId: current.tenant.id,
+          type,
+          companyId,
           occurredAt: now
         })),
         ...current.analytics

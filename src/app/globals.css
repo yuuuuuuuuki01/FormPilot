@@ -273,6 +273,11 @@ a {
   cursor: pointer;
 }
 
+.small-button {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
 .button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
