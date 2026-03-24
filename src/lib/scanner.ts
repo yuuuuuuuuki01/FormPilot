@@ -1,8 +1,5 @@
+import { randomUUID } from "node:crypto";
 import type { Company, FormTarget, PageSnapshot, ReviewQueueItem, WebsiteScan } from "@/lib/types";
-
-function slugFromUrl(url: string) {
-  return url.replace(/^https?:\/\//, "").replace(/\/.*$/, "");
-}
 
 export interface ScanResult {
   company: Company;
@@ -13,11 +10,39 @@ export interface ScanResult {
   analyticsTypes: Array<"scanned" | "form_detected">;
 }
 
+function buildId(prefix: string) {
+  return `${prefix}_${randomUUID()}`;
+}
+
+function normalizeSignals(company: Company) {
+  return [company.name, company.industry, company.region, company.websiteUrl, company.dedupeKey]
+    .join(" ")
+    .toLowerCase();
+}
+
+function hasAny(text: string, patterns: string[]) {
+  return patterns.some((pattern) => text.includes(pattern));
+}
+
+function classifyOutcome(company: Company) {
+  const signals = normalizeSignals(company);
+
+  if (hasAny(signals, ["manufact", "factory", "precision", "seizou", "製造"])) {
+    return "blocked_phrase" as const;
+  }
+
+  if (hasAny(signals, ["consult", "advis", "strategy", "studio", "creative"])) {
+    return "special_form" as const;
+  }
+
+  return "send_ready" as const;
+}
+
 export function simulateScan(company: Company): ScanResult {
-  const domain = slugFromUrl(company.websiteUrl);
   const scannedAt = new Date().toISOString();
+  const outcome = classifyOutcome(company);
   const baseScan: WebsiteScan = {
-    id: `scan_${Date.now()}`,
+    id: buildId("scan"),
     tenantId: company.tenantId,
     companyId: company.id,
     discoveredPages: ["/", "/about", "/contact", "/privacy"],
@@ -25,19 +50,9 @@ export function simulateScan(company: Company): ScanResult {
     lastScannedAt: scannedAt
   };
 
-  if (company.name.includes("Takumi") || company.industry === "製造") {
-    const review: ReviewQueueItem = {
-      id: `review_${Date.now()}`,
-      tenantId: company.tenantId,
-      companyId: company.id,
-      subject: `${company.name} の問い合わせフォーム`,
-      reason: "ambiguous_phrase",
-      detail: "フォーム周辺文言に営業目的の送信禁止表現を検知したため、レビューに回しました。",
-      retryAllowed: false
-    };
-
+  if (outcome === "blocked_phrase") {
     const form: FormTarget = {
-      id: `form_${Date.now()}`,
+      id: buildId("form"),
       tenantId: company.tenantId,
       companyId: company.id,
       url: `${company.websiteUrl}/contact`,
@@ -46,17 +61,27 @@ export function simulateScan(company: Company): ScanResult {
       hasConfirmationStep: false,
       sendAllowed: false,
       blockedPhraseDetected: true,
-      failureReason: "営業禁止文言を検知"
+      failureReason: "Blocked by forbidden outreach wording"
     };
 
     const snapshot: PageSnapshot = {
-      id: `snapshot_${Date.now()}`,
+      id: buildId("snapshot"),
       tenantId: company.tenantId,
       companyId: company.id,
       formTargetId: form.id,
-      surroundingText: "営業目的のご連絡はお断りします。製品に関するお問い合わせのみ受け付けます。",
-      confirmationText: "内容確認後に送信します。",
-      textHash: `hash_${Date.now()}`
+      surroundingText: "Sales inquiries are not accepted. Only product-related contact is supported.",
+      confirmationText: "Confirm the details before submitting.",
+      textHash: buildId("hash")
+    };
+
+    const review: ReviewQueueItem = {
+      id: buildId("review"),
+      tenantId: company.tenantId,
+      companyId: company.id,
+      subject: `${company.name} form review`,
+      reason: "ambiguous_phrase",
+      detail: "Detected wording that suggests outreach is not allowed. Route this company to review instead of sending automatically.",
+      retryAllowed: false
     };
 
     return {
@@ -65,7 +90,7 @@ export function simulateScan(company: Company): ScanResult {
         scanStatus: "needs_review",
         formDetected: true,
         sendReady: false,
-        blockReason: "営業禁止文言を検知"
+        blockReason: "Blocked by forbidden outreach wording"
       },
       scan: baseScan,
       form,
@@ -75,28 +100,28 @@ export function simulateScan(company: Company): ScanResult {
     };
   }
 
-  if (company.name.includes("Northfield")) {
+  if (outcome === "special_form") {
     return {
       company: {
         ...company,
         scanStatus: "needs_review",
         formDetected: false,
         sendReady: false,
-        blockReason: "問い合わせ導線が SPA 内にあり追加解析が必要"
+        blockReason: "Form path needs manual review due to a dynamic or non-standard contact flow"
       },
       scan: {
         ...baseScan,
         discoveredPages: ["/", "/company"],
         contactCandidateUrls: [],
-        failureReason: "contact / inquiry 導線が見つからずレビューへ移動"
+        failureReason: "No static contact/inquiry path found"
       },
       review: {
-        id: `review_${Date.now()}`,
+        id: buildId("review"),
         tenantId: company.tenantId,
         companyId: company.id,
-        subject: `${company.name} のフォーム探索`,
+        subject: `${company.name} scan review`,
         reason: "special_form",
-        detail: "問い合わせ導線が動的描画で隠れているため、追加解析が必要です。",
+        detail: "Detected a dynamic or non-standard contact path. Review this company before generating a sendable form target.",
         retryAllowed: true
       },
       analyticsTypes: ["scanned"]
@@ -104,7 +129,7 @@ export function simulateScan(company: Company): ScanResult {
   }
 
   const form: FormTarget = {
-    id: `form_${Date.now()}`,
+    id: buildId("form"),
     tenantId: company.tenantId,
     companyId: company.id,
     url: `${company.websiteUrl}/contact`,
@@ -116,13 +141,13 @@ export function simulateScan(company: Company): ScanResult {
   };
 
   const snapshot: PageSnapshot = {
-    id: `snapshot_${Date.now()}`,
+    id: buildId("snapshot"),
     tenantId: company.tenantId,
     companyId: company.id,
     formTargetId: form.id,
-    surroundingText: "ご相談やご質問はこちらのフォームからお問い合わせください。",
-    confirmationText: "内容をご確認のうえ送信してください。",
-    textHash: `hash_${Date.now()}`
+    surroundingText: "Contact us here for questions or consultation requests.",
+    confirmationText: "Please review the content before submitting.",
+    textHash: buildId("hash")
   };
 
   return {

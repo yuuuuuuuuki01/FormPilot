@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 import { buildSearchQueries, materializeCollectedCompanies } from "@/lib/collector";
 import { simulateScan } from "@/lib/scanner";
 import { seedState, type AppState } from "@/lib/seed-data";
@@ -7,6 +8,7 @@ import type { CollectionSource, LeadCollectionRule, ReviewQueueItem, TenantSendP
 
 const dataDir = path.join(process.cwd(), "data");
 const dataFile = path.join(dataDir, "formpilot-state.json");
+let stateMutationQueue: Promise<void> = Promise.resolve();
 
 function cloneSeedState(): AppState {
   return JSON.parse(JSON.stringify(seedState)) as AppState;
@@ -33,10 +35,23 @@ export async function writeState(state: AppState) {
 }
 
 export async function updateState(updater: (state: AppState) => AppState | Promise<AppState>) {
-  const current = await readState();
-  const next = await updater(current);
-  await writeState(next);
-  return next;
+  let releaseQueue = () => {};
+  const nextTurn = new Promise<void>((resolve) => {
+    releaseQueue = resolve;
+  });
+  const previousTurn = stateMutationQueue;
+  stateMutationQueue = nextTurn;
+
+  await previousTurn;
+
+  try {
+    const current = await readState();
+    const next = await updater(current);
+    await writeState(next);
+    return next;
+  } finally {
+    releaseQueue();
+  }
 }
 
 export interface CreateRuleInput {
@@ -53,7 +68,7 @@ export async function createCollectionRule(input: CreateRuleInput) {
   const now = new Date().toISOString();
   const state = await updateState((current) => {
     const rule: LeadCollectionRule = {
-      id: `rule_${Date.now()}`,
+      id: `rule_${randomUUID()}`,
       tenantId: current.tenant.id,
       name: input.name,
       industries: input.industries,
@@ -110,7 +125,7 @@ export async function runCollectionRule(ruleId: string) {
       companies: [...companies, ...current.companies],
       analytics: [
         ...companies.map((company, index) => ({
-          id: `analytics_${Date.now()}_${index}`,
+          id: `analytics_${randomUUID()}_${index}`,
           tenantId: current.tenant.id,
           type: "collected" as const,
           companyId: company.id,
@@ -161,7 +176,7 @@ export async function scanCompany(companyId: string) {
         : current.reviews.filter((review) => review.companyId !== companyId),
       analytics: [
         ...scanned.analyticsTypes.map((type, index) => ({
-          id: `analytics_${Date.now()}_${index}`,
+          id: `analytics_${randomUUID()}_${index}`,
           tenantId: current.tenant.id,
           type,
           companyId,

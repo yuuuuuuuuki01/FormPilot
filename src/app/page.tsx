@@ -18,14 +18,15 @@ export default async function HomePage() {
 
   return (
     <AppShell
-      title="企業 / フォーム収集画面"
-      description="収集、URL解析、フォーム抽出、送信可否の判定を一画面で把握するための MVP 主画面です。収集済み企業からそのままフォーム探索を実行できます。"
+      title="Company / Form Collection"
+      description="Use this screen to monitor collection, URL analysis, form discovery, and send readiness. Collected companies can be pushed directly into the form scan flow."
     >
       <section className="hero">
         <p className="eyebrow">MVP Focus</p>
-        <h3>企業URLからフォーム情報までを自動取得し、送れる企業だけを前に出す</h3>
+        <h3>Collect company URLs first, then discover sendable forms automatically</h3>
         <p>
-          収集ルールで企業URL候補を取り込み、そのままフォーム探索へ流して送信可否を更新します。危険ケースだけレビューへ戻す形です。
+          Collection rules bring in candidate company URLs. From there, FormPilot runs form discovery, blocks risky cases,
+          and surfaces only sendable targets.
         </p>
         <div className="hero-grid">
           {pipeline.map((item) => (
@@ -51,19 +52,19 @@ export default async function HomePage() {
         <CompanyCollectionTable companies={data.companies} />
 
         <article className="card">
-          <h3 className="table-title">直近の商談化</h3>
+          <h3 className="table-title">Recent Scheduled Meetings</h3>
           <div className="stack">
             {upcoming.map((meeting) => (
               <div key={meeting.id} className="note">
                 <div className="inline-stats">
                   <strong>{meeting.companyName}</strong>
-                  <span className="pill ok">日程確定</span>
+                  <span className="pill ok">Scheduled</span>
                 </div>
                 <p className="muted">
-                  予約URL: <span className="code">{meeting.bookingUrl}</span>
+                  Booking URL: <span className="code">{meeting.bookingUrl}</span>
                 </p>
-                <p className="muted">確定日時: {meeting.scheduledFor}</p>
-                <p className="muted">担当: {meeting.ownerName}</p>
+                <p className="muted">Scheduled for: {meeting.scheduledFor}</p>
+                <p className="muted">Owner: {meeting.ownerName}</p>
               </div>
             ))}
           </div>
@@ -72,7 +73,7 @@ export default async function HomePage() {
 
       <section className="triple">
         <article className="card">
-          <h3 className="section-title">レビュー待ち</h3>
+          <h3 className="section-title">Review Queue</h3>
           <div className="stack">
             {data.reviews.map((review) => (
               <div key={review.id} className="note">
@@ -87,19 +88,19 @@ export default async function HomePage() {
         </article>
 
         <article className="card">
-          <h3 className="section-title">送信停止候補</h3>
+          <h3 className="section-title">Blocked or Pending</h3>
           <div className="stack">
             {blockers.map((company) => (
               <div key={company.id} className="note">
                 <strong>{company.name}</strong>
-                <p className="muted">{company.blockReason ?? "再確認が必要です。"}</p>
+                <p className="muted">{company.blockReason ?? "Needs follow-up review."}</p>
               </div>
             ))}
           </div>
         </article>
 
         <article className="card">
-          <h3 className="section-title">禁止文言辞書</h3>
+          <h3 className="section-title">Blocked Phrase Library</h3>
           <div className="stack">
             {getBlockedPhrasesPreview().map((phrase) => (
               <div key={phrase} className="note">
